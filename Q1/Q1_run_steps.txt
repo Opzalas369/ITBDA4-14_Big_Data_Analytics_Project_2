@@ -1,0 +1,53 @@
+Q1 run steps
+Hadoop 3.2.4 on Windows. Use a PowerShell window opened as Administrator.
+
+What this does
+The job searches every document in an HDFS folder for a keyword and returns the
+document name with the row (line number) and column (word position) of each match.
+The keyword is given when the job is run, so it is not hard-coded.
+
+1. Start Hadoop (four windows open, leave them open)
+   & "C:\hadoopsetup\hadoop-3.2.4\sbin\start-dfs.cmd"
+   & "C:\hadoopsetup\hadoop-3.2.4\sbin\start-yarn.cmd"
+   Start-Sleep -Seconds 15
+   jps
+   jps must show NameNode, DataNode, ResourceManager and NodeManager.
+
+2. Go to the Q1 folder, then compile and build the jar
+   cd "<path to project2>\Q1"
+   mkdir build
+   $cp = hadoop classpath
+   javac -cp $cp -d build Q1_2_Mapper.java Q1_3_Reducer.java Q1_4_Driver.java
+   jar cf q1.jar -C build .
+
+3. Copy the documents into HDFS
+   hdfs dfs -mkdir -p /user/sherm/docs
+   Get-ChildItem ..\datasets\map_reduce_test_docs\*.txt | ForEach-Object { hdfs dfs -put -f $_.FullName /user/sherm/docs }
+   hdfs dfs -ls /user/sherm/docs
+
+4. Run the job (input folder, output folder, keyword)
+   hdfs dfs -rm -r -f /user/sherm/out_africa
+   hadoop jar q1.jar Q1_4_Driver /user/sherm/docs /user/sherm/out_africa africa
+
+5. Read and save the result
+   hdfs dfs -cat /user/sherm/out_africa/part-r-00000
+   hdfs dfs -cat /user/sherm/out_africa/part-r-00000 | Out-File -Encoding utf8 Q1_output_africa.txt
+
+6. Run another keyword (same jar, new output folder)
+   hdfs dfs -rm -r -f /user/sherm/out_SARS
+   hadoop jar q1.jar Q1_4_Driver /user/sherm/docs /user/sherm/out_SARS SARS
+   hdfs dfs -cat /user/sherm/out_SARS/part-r-00000
+   hdfs dfs -cat /user/sherm/out_SARS/part-r-00000 | Out-File -Encoding utf8 Q1_output_SARS.txt
+
+7. Stop Hadoop when finished
+   Get-Process java | Stop-Process -Force
+
+Notes
+- The output folder must not exist before a run, which is why step 4 and 6 delete it first.
+- If the job stays at "Running job", open http://localhost:8088/cluster/nodes/unhealthy.
+  If the node is unhealthy because the C: drive is over 90 percent full, add this to
+  C:\hadoopsetup\hadoop-3.2.4\etc\hadoop\yarn-site.xml before </configuration>, then restart Hadoop:
+    <property>
+      <name>yarn.nodemanager.disk-health-checker.max-disk-utilization-per-disk-percentage</name>
+      <value>99</value>
+    </property>
