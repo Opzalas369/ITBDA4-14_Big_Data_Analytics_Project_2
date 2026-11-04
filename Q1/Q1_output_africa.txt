@@ -1,0 +1,4 @@
+﻿doc1.txt	1 match(es) at 1:11
+doc2.txt	3 match(es) at 1:8 33:5 58:14
+doc3.txt	8 match(es) at 1:8 3:2 5:2 40:22 46:2 50:23 52:15 54:6
+doc5.txt	4 match(es) at 1:12 3:14 23:21 38:6
